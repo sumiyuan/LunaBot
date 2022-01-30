@@ -6,6 +6,7 @@ import youtube_dl
 import socket
 
 class Player(commands.Cog):
+
 	def __init__(self, bot):
 		self.bot = bot
 		self.song_que = {}
@@ -35,19 +36,24 @@ class Player(commands.Cog):
 		ydl_options = {"format":"bestaudio/best"}
 
 		with youtube_dl.YoutubeDL(ydl_options) as ydl:
-			FFMpeg_options = {"before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5", "options":"-vn"}
 			info = ydl.extract_info(song, download = False)
 			url2 = info['formats'][0]['url']
-			ctx.voice_client.play(discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(url2)), after=lambda error: self.bot.loop.create_task(self.check_queue(ctx)))
+			ctx.voice_client.play(discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(url2, options="-framerate 60 -probesize 72M")), after=lambda error: self.bot.loop.create_task(self.check_queue(ctx)))
+			if len(self.song_que[ctx.guild.id]) > 0:
+			  await ctx.send(f"Now playing: {song}")
 			#source = await discord.FFmpegOpusAudio.from_probe(url2, **FFMpeg_options)
 			#ctx.voice_client.play(source, after=lambda error: self.bot.loop.create_task(self.check_queue(ctx)))
 
 		#ctx.voice_client.source.volume = 0.5
 
 	async def check_queue(self, ctx):
+		#await ctx.send("a song has passed")
 		if len(self.song_que[ctx.guild.id]) > 0:
-			await self.play_song(ctx, self.song_que[ctx.guild.id][0])
-			self.song_que[ctx.guild.id].pop(0)
+		  await self.play_song(ctx, self.song_que[ctx.guild.id][0])
+		  self.song_que[ctx.guild.id].pop(0)
+		else:
+		  #await ctx.send("deleted that fucker")
+		  ctx.voice_client.stop()
 
 	async def search_song(self, amount, song, get_url=False):
 		info = await self.bot.loop.run_in_executor(None, lambda: youtube_dl.YoutubeDL({"format" : "bestaudio", "quiet" : True}).extract_info(f"ytsearch{amount}:{song}", download=False, ie_key="YoutubeSearch"))
@@ -126,3 +132,13 @@ class Player(commands.Cog):
 
 		ctx.voice_client.stop()
 
+	@commands.command()
+	async def stop(self, ctx):
+	  self.song_que[ctx.guild.id].clear()
+	  ctx.voice_client.stop()
+  
+	@commands.command()
+	async def test(self, ctx):
+	  return await ctx.send(ctx.voice_client.source)
+	  print(self.song_que[ctx.guild.id])
+  

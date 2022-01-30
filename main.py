@@ -1,6 +1,8 @@
+from webserver import keepAlive
+import os
 import discord
 from discord.ext import commands
-from bot import Player
+from music import Player
 
 intents = discord.Intents.default()
 intents.members = True
@@ -16,4 +18,7 @@ async def setup():
 	bot.add_cog(Player(bot))
 
 bot.loop.create_task(setup())
-bot.run("")
+
+keepon()
+Token = os.environ['discord_key']
+bot.run(Token)
